@@ -1,0 +1,2 @@
+- [Frontend Test Configuration](project_test_config.md) — Playwright E2E setup, config location, custom helpers, and React input typing approach
+- [Login Step Transition Failure](project_login_step_transition_bug.md) — Previously failing 2/3 Login Page tests; all 3 now pass as of 2026-03-29 (resolved)

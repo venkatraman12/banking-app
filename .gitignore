@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+
+# Build outputs
+dist/
+build/
+frontend/dist/
+
+# Playwright
+frontend/playwright-report/
+frontend/test-results/
+
+# Environment files
+.env
+backend/.env
+python_backend/.env
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.db
+python_backend/novabanc.db
+
+# Prisma
+backend/prisma/dev.db

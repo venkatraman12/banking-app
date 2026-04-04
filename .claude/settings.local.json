@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npx vite:*)",
+      "Bash(find /Users/venkat/webapps/banking-app -type d -empty -delete)",
+      "Bash(npx playwright:*)",
+      "Bash(npx jest:*)",
+      "Bash(node -e \":*)",
+      "Bash(xargs kill:*)",
+      "Bash(wc -l /Users/venkat/webapps/banking-app/frontend/src/pages/*/*.jsx /Users/venkat/webapps/banking-app/frontend/src/*.jsx /Users/venkat/webapps/banking-app/frontend/src/components/layout/*.jsx)",
+      "Bash(find /Users/venkat/webapps/banking-app -type f -name .env*)",
+      "Bash(grep -r \"csrf\\\\|csp\\\\|CSP\\\\|CSRF\\\\|helmet\\\\|Content-Security\" /Users/venkat/webapps/banking-app --include=*.js --include=*.jsx)",
+      "Bash(find /Users/venkat/webapps/banking-app/frontend/src -type f -name \"*.jsx\" -exec wc -l {} +)",
+      "Skill(claude-api)",
+      "Skill(claude-api:*)",
+      "Bash(node -e \"import\\(''@anthropic-ai/claude-agent-sdk''\\).then\\(m => console.log\\(''SDK loaded:'', Object.keys\\(m\\)\\)\\)\")",
+      "Bash(claude --version)",
+      "Read(//Users/venkat/.claude/**)",
+      "Read(//usr/local/bin/**)",
+      "Read(//usr/**)",
+      "Bash(npm list:*)",
+      "Read(//Users/venkat/.npm/bin/**)",
+      "Bash(npx claude:*)",
+      "Bash(echo $PATH)",
+      "Read(//Users/venkat/**)",
+      "Read(//Users/venkat/.local/**)",
+      "Bash(mdfind -name claude)",
+      "Bash(timeout 5 node test-agent.mjs)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000)",
+      "Bash(wait)",
+      "Bash(npm run:*)",
+      "Bash(python3 scripts/validate_api.py)",
+      "Bash(pip3 install:*)",
+      "Bash(python3 /Users/venkat/webapps/banking-app/scripts/validate_api.py)",
+      "Bash(python3 -c \"import fastapi, sqlalchemy, jose, passlib; print\\(''All imports OK''\\)\")",
+      "Bash(python3 -c \"import main; print\\(''App loaded OK — routes:'', [r.path for r in main.app.routes]\\)\")",
+      "Bash(node:*)",
+      "Bash(env | grep -i anthropic 2>/dev/null; echo \"exit: $?\")"
+    ]
+  }
+}

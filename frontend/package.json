@@ -1,0 +1,39 @@
+{
+  "name": "banking-app-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "npx playwright test --project=chromium",
+    "test:mobile": "npx playwright test --project=mobile-chrome --project=mobile-safari",
+    "test:browsers": "npx playwright test tests/e2e/banking-app.spec.js --project=firefox --project=webkit",
+    "test:all": "npx playwright test",
+    "test:ui": "npx playwright test --ui",
+    "test:headed": "npx playwright test --headed",
+    "test:agent": "node test-agent.mjs",
+    "test:agent:fix": "node test-agent.mjs --fix",
+    "test:agent:security": "node test-agent.mjs --suite \"Cybersecurity\"",
+    "test:perf": "npx playwright test tests/e2e/performance.spec.js --project=chromium",
+    "test:lighthouse": "npx playwright test tests/e2e/lighthouse.spec.js --project=chromium",
+    "analyze": "vite build && open dist/bundle-stats.html"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.2.76",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.22.0",
+    "web-vitals": "^5.2.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@vitejs/plugin-react": "^4.2.0",
+    "lighthouse": "^13.0.3",
+    "rollup-plugin-visualizer": "^7.0.1",
+    "vite": "^5.1.0"
+  }
+}

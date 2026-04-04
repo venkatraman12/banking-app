@@ -1,0 +1,131 @@
+.investments-page { display: flex; flex-direction: column; gap: 24px; }
+
+/* Summary */
+.inv-summary {
+  background: linear-gradient(135deg, #0f172a, #1a56db);
+  border-radius: var(--radius-lg); padding: 28px 32px;
+  display: flex; align-items: center; gap: 32px; flex-wrap: wrap;
+}
+.inv-summary-main { flex: 1; }
+.inv-total-label { font-size: 13px; color: rgba(255,255,255,0.65); font-weight: 500; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+.inv-total-value { font-size: 40px; font-weight: 800; color: white; letter-spacing: -1px; margin-bottom: 6px; }
+.inv-total-gain { font-size: 15px; font-weight: 600; }
+.inv-total-gain.positive { color: #4ade80; }
+.inv-total-gain.negative { color: #f87171; }
+
+.inv-summary-stats { display: flex; gap: 32px; flex-wrap: wrap; }
+.inv-stat { display: flex; flex-direction: column; gap: 4px; }
+.inv-stat span { font-size: 12px; color: rgba(255,255,255,0.55); }
+.inv-stat strong { font-size: 16px; font-weight: 700; color: white; }
+.inv-stat strong.positive { color: #4ade80; }
+
+/* Chart */
+.inv-chart-card { }
+.chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.chart-header h2 { font-size: 16px; font-weight: 600; }
+.chart-period-tabs { display: flex; gap: 4px; }
+.period-btn { padding: 5px 12px; border-radius: var(--radius-full); border: 1px solid var(--border); font-size: 12px; font-weight: 600; color: var(--text-muted); background: var(--bg); cursor: pointer; transition: all var(--transition); }
+.period-btn--active { background: var(--primary); color: white; border-color: var(--primary); }
+
+.bar-chart { display: flex; align-items: flex-end; gap: 12px; height: 180px; padding-top: 24px; }
+.bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; gap: 6px; }
+.bar-value { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+.bar-fill { width: 100%; border-radius: 6px 6px 0 0; background: var(--primary-bg); border: 1px solid var(--border); transition: height var(--transition); }
+.bar-fill--active { background: var(--primary); border-color: var(--primary); }
+.bar-label { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+
+/* Bottom grid */
+.inv-bottom-grid { display: grid; grid-template-columns: 1fr 280px; gap: 16px; align-items: start; }
+
+/* Holdings */
+.inv-holdings-card { }
+.inv-tabs { display: flex; gap: 0; border-bottom: 2px solid var(--border); margin-bottom: 16px; }
+.inv-tab { padding: 10px 20px; font-size: 14px; font-weight: 600; color: var(--text-muted); background: none; border: none; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all var(--transition); }
+.inv-tab--active { color: var(--primary); border-bottom-color: var(--primary); }
+
+.holdings-table-wrap { overflow-x: auto; }
+.holdings-table { width: 100%; border-collapse: collapse; }
+.holdings-table th { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--bg); text-align: left; }
+.holdings-table td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
+.holdings-table tbody tr:hover { background: var(--bg); }
+.holdings-table tbody tr:last-child td { border-bottom: none; }
+
+.holding-symbol { display: flex; align-items: center; gap: 8px; }
+.holding-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.holding-ticker { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+.holding-name { font-size: 11px; color: var(--text-muted); }
+.holding-val { color: var(--text-secondary); }
+.holding-val.bold { font-weight: 700; color: var(--text-primary); }
+.holding-change, .holding-gain { font-weight: 600; font-size: 12px; }
+.positive { color: var(--success); }
+.negative { color: var(--danger); }
+.trade-btn { padding: 4px 12px; background: var(--primary-bg); color: var(--primary); border: 1px solid var(--primary); border-radius: var(--radius-sm); font-size: 12px; font-weight: 600; cursor: pointer; transition: all var(--transition); }
+.trade-btn:hover { background: var(--primary); color: white; }
+
+/* Allocation */
+.allocation-view { display: flex; align-items: center; gap: 32px; padding: 16px 0; }
+.alloc-donut { position: relative; width: 140px; height: 140px; flex-shrink: 0; }
+.donut-svg { width: 100%; height: 100%; }
+.donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.donut-center span:first-child { font-size: 18px; font-weight: 800; color: var(--text-primary); }
+.donut-center span:last-child { font-size: 11px; color: var(--text-muted); }
+.alloc-legend { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+.alloc-item { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.alloc-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.alloc-label { flex: 1; color: var(--text-secondary); }
+.alloc-pct { font-weight: 700; color: var(--text-primary); }
+
+/* Trade panel */
+.trade-panel { }
+.trade-panel-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+.trade-ticker { font-size: 22px; font-weight: 800; color: var(--text-primary); }
+.trade-company { font-size: 12px; color: var(--text-muted); }
+.trade-price { font-size: 20px; font-weight: 700; color: var(--text-primary); }
+.trade-type-tabs { display: flex; border: 1.5px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+.trade-type-btn { flex: 1; padding: 10px; font-size: 14px; font-weight: 700; cursor: pointer; background: var(--bg); color: var(--text-muted); border: none; transition: all var(--transition); }
+.buy--active { background: var(--success); color: white; }
+.sell--active { background: var(--danger); color: white; }
+.trade-estimate { display: flex; justify-content: space-between; margin-top: 12px; padding: 10px; background: var(--bg); border-radius: var(--radius-sm); font-size: 13px; color: var(--text-secondary); }
+.trade-estimate strong { font-size: 15px; color: var(--text-primary); }
+.btn-danger { background: var(--danger); color: white; }
+.btn-danger:hover { background: #dc2626; }
+
+/* Holding rows clickable */
+.holding-row { cursor: pointer; transition: background var(--transition); }
+.holding-row:hover { background: #f0f7ff !important; }
+
+/* Watchlist */
+.watch-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 10px; border-bottom: 1px solid var(--border);
+  border-radius: var(--radius-sm); transition: all var(--transition);
+}
+.watch-item:last-child { border-bottom: none; }
+.watch-item--clickable { cursor: pointer; }
+.watch-item--clickable:hover { background: var(--primary-bg); border-color: transparent; }
+
+.watch-symbol { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+.watch-name   { font-size: 11px; color: var(--text-muted); display: block; }
+.watch-right  { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.watch-price  { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.watch-change { font-size: 12px; font-weight: 700; }
+
+.btn-full { width: 100%; }
+
+/* Order success */
+.order-success {
+  display: flex; flex-direction: column; align-items: center;
+  text-align: center; gap: 12px; padding: 12px 0;
+}
+.order-success-icon {
+  width: 64px; height: 64px; border-radius: 50%;
+  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+  color: var(--success); font-size: 28px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 16px rgba(16,185,129,0.25);
+}
+.order-success h3 { font-size: 20px; font-weight: 800; color: var(--text-primary); }
+.order-success p  { font-size: 14px; color: var(--text-secondary); line-height: 1.6; }
+
+@media (max-width: 1024px) { .inv-bottom-grid { grid-template-columns: 1fr; } }
+@media (max-width: 768px) { .inv-summary { flex-direction: column; gap: 16px; } .inv-summary-stats { gap: 16px; } }

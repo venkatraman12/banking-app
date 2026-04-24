@@ -155,7 +155,7 @@ async function runAgent() {
       allowDangerouslySkipPermissions: true,
       systemPrompt: SYSTEM_PROMPT,
       maxTurns: shouldFix ? 20 : 10,
-      model: 'claude-opus-4-6',
+      model: 'claude-sonnet-4-6',
     },
   })) {
     // AssistantMessage — stream text output + show tool calls

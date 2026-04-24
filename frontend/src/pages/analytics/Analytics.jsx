@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import './analytics.css'
+import './Analytics.css'
 
 /* ── Animated counter ── */
 function useCountUp(target, duration = 1800, delay = 0) {

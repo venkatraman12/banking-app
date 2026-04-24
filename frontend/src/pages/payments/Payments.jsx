@@ -1,5 +1,5 @@
 import React, { useState, Profiler } from 'react'
-import PinPad from '../../components/PinPad'
+import PinPad from '../../components/PinPad/PinPad'
 import { validatePaymentForm } from '../../utils/validate'
 import { downloadReceipt } from '../../utils/downloadReceipt'
 import './Payments.css'

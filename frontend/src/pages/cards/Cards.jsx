@@ -1,35 +1,39 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { api, tokenStore } from '../../api/client'
 import './Cards.css'
 
-const initialCards = [
-  {
-    id: 1, type: 'Visa', name: 'Alex Johnson', number: '4821 8834 2901 4821',
-    expiry: '09/28', cvv: '•••', limit: 5000, spent: 1240,
-    status: 'active', color: ['#1a56db', '#0ea5e9'], label: 'Platinum Debit',
-  },
-  {
-    id: 2, type: 'Mastercard', name: 'Alex Johnson', number: '5412 7751 3384 5412',
-    expiry: '03/27', cvv: '•••', limit: 10000, spent: 3760,
-    status: 'active', color: ['#7c3aed', '#db2777'], label: 'Gold Credit',
-  },
-  {
-    id: 3, type: 'Visa', name: 'Alex Johnson', number: '4929 6614 8823 4929',
-    expiry: '11/25', cvv: '•••', limit: 2000, spent: 0,
-    status: 'frozen', color: ['#475569', '#94a3b8'], label: 'Virtual Card',
-  },
-]
+const COLOR_BY_TYPE = {
+  DEBIT:    ['#1a56db', '#0ea5e9'],
+  CREDIT:   ['#7c3aed', '#db2777'],
+  VIRTUAL:  ['#475569', '#94a3b8'],
+  PREPAID:  ['#059669', '#10b981'],
+}
 
-const recentTx = [
-  { id: 1, name: 'Apple Store', amount: -129.99, date: 'Mar 10', icon: '🍎', card: 1 },
-  { id: 2, name: 'Uber Eats', amount: -34.50, date: 'Mar 9', icon: '🍔', card: 1 },
-  { id: 3, name: 'Netflix', amount: -15.99, date: 'Mar 9', icon: '🎬', card: 2 },
-  { id: 4, name: 'Amazon', amount: -89.00, date: 'Mar 8', icon: '📦', card: 2 },
-  { id: 5, name: 'Starbucks', amount: -6.75, date: 'Mar 7', icon: '☕', card: 1 },
-]
+const statusLower = (s) => (s || '').toLowerCase()
+
+function hydrate(c, holderName) {
+  const color = COLOR_BY_TYPE[c.type] || COLOR_BY_TYPE.DEBIT
+  const last4 = c.last4 || '0000'
+  return {
+    id:      c.id,
+    type:    c.network || 'Visa',
+    name:    holderName || 'Account Holder',
+    number:  `•••• •••• •••• ${last4}`,
+    expiry:  c.expiry,
+    cvv:     '•••',
+    limit:   Number(c.limit),
+    spent:   Number(c.spent),
+    status:  statusLower(c.status),
+    color,
+    label:   c.label,
+  }
+}
 
 export default function Cards() {
-  const [cards, setCards] = useState(initialCards)
-  const [selected, setSelected] = useState(cards[0])
+  const [cards, setCards]       = useState([])
+  const [selected, setSelected] = useState(null)
+  const [loading, setLoading]   = useState(true)
+  const [error, setError]       = useState('')
   const [flipped, setFlipped] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
@@ -37,38 +41,68 @@ export default function Cards() {
   const [showLimitModal, setShowLimitModal] = useState(false)
   const [limitInput, setLimitInput] = useState('')
 
-  const toggleFreeze = (id) => {
-    setCards(prev => prev.map(c =>
-      c.id === id ? { ...c, status: c.status === 'active' ? 'frozen' : 'active' } : c
-    ))
-    setSelected(prev => ({ ...prev, status: prev.status === 'active' ? 'frozen' : 'active' }))
+  useEffect(() => {
+    const holder = tokenStore.user()?.name
+    api.getCards()
+      .then(res => {
+        const list = res.data.map(c => hydrate(c, holder))
+        setCards(list)
+        setSelected(list[0] || null)
+      })
+      .catch(err => setError(err.message || 'Failed to load cards'))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const toggleFreeze = async (id) => {
+    const card = cards.find(c => c.id === id)
+    if (!card) return
+    const next = card.status === 'frozen' ? 'ACTIVE' : 'FROZEN'
+    try {
+      const res = await api.updateCard(id, { status: next })
+      const updated = { ...card, status: statusLower(res.data.status) }
+      setCards(prev => prev.map(c => c.id === id ? updated : c))
+      if (selected?.id === id) setSelected(updated)
+    } catch (err) { setError(err.message || 'Could not update card') }
   }
 
-  const blockCard = (id) => {
-    setCards(prev => prev.map(c => c.id === id ? { ...c, status: 'blocked' } : c))
-    setSelected(prev => ({ ...prev, status: 'blocked' }))
-    setBlockConfirm(false)
+  const blockCard = async (id) => {
+    try {
+      const res = await api.updateCard(id, { status: 'BLOCKED' })
+      const updated = { ...cards.find(c => c.id === id), status: statusLower(res.data.status) }
+      setCards(prev => prev.map(c => c.id === id ? updated : c))
+      if (selected?.id === id) setSelected(updated)
+      setBlockConfirm(false)
+    } catch (err) { setError(err.message || 'Could not block card') }
   }
 
-  const applyLimit = () => {
+  const applyLimit = async () => {
     const newLimit = parseInt(limitInput, 10)
-    if (!newLimit || newLimit < 1) return
-    setCards(prev => prev.map(c => c.id === selected.id ? { ...c, limit: newLimit } : c))
-    setSelected(prev => ({ ...prev, limit: newLimit }))
-    setShowLimitModal(false)
-    setLimitInput('')
+    if (!newLimit || newLimit < 1 || !selected) return
+    try {
+      const res = await api.updateCard(selected.id, { limit: newLimit })
+      const updated = { ...selected, limit: Number(res.data.limit) }
+      setCards(prev => prev.map(c => c.id === selected.id ? updated : c))
+      setSelected(updated)
+      setShowLimitModal(false)
+      setLimitInput('')
+    } catch (err) { setError(err.message || 'Could not update limit') }
   }
 
-  const deleteCard = (id) => {
-    const remaining = cards.filter(c => c.id !== id)
-    setCards(remaining)
-    setSelected(remaining[0] ?? null)
-    setFlipped(false)
-    setDeleteConfirm(null)
+  const deleteCard = async (id) => {
+    try {
+      await api.deleteCard(id)
+      const remaining = cards.filter(c => c.id !== id)
+      setCards(remaining)
+      setSelected(remaining[0] ?? null)
+      setFlipped(false)
+      setDeleteConfirm(null)
+    } catch (err) { setError(err.message || 'Could not delete card') }
   }
 
-  const cardTx = selected ? recentTx.filter(t => t.card === selected.id) : []
-  const usedPct = selected ? Math.round((selected.spent / selected.limit) * 100) : 0
+  if (loading) return <div className="cards-page"><p>Loading cards…</p></div>
+
+  const cardTx = []
+  const usedPct = selected && selected.limit ? Math.round((selected.spent / selected.limit) * 100) : 0
 
   return (
     <div className="cards-page">
@@ -81,6 +115,8 @@ export default function Cards() {
           + Add Card
         </button>
       </div>
+
+      {error && <div className="card" style={{ padding: 12, color: 'var(--danger)' }}>{error}</div>}
 
       {showAdd && (
         <div className="card add-card-banner">
@@ -193,7 +229,7 @@ export default function Cards() {
               {selected.status === 'frozen' && <div className="frozen-overlay">❄ Frozen</div>}
               {selected.status === 'blocked' && <div className="frozen-overlay" style={{ background: 'rgba(220,38,38,0.75)' }}>🔒 Blocked</div>}
               <div className="card-3d-top">
-                <span className="card-3d-bank">NovaBanc</span>
+                <span className="card-3d-bank">NovaBank</span>
                 <div className="card-chip">
                   <div /><div /><div />
                 </div>

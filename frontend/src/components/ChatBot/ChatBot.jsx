@@ -57,7 +57,7 @@ const KB = [
   {
     id: 'greeting',
     patterns: ['hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening', 'howdy', 'sup'],
-    text: `Hello! 👋 I'm **Nova**, your personal NovaBanc AI assistant.\n\nI can help you with balances, transactions, investments, payments, security and more. What can I do for you today?`,
+    text: `Hello! 👋 I'm **Nova**, your personal NovaBank AI assistant.\n\nI can help you with balances, transactions, investments, payments, security and more. What can I do for you today?`,
     card: null,
     suggestions: ['What is my balance?', 'Show my transactions', 'How is my portfolio doing?'],
     actions: [],
@@ -177,7 +177,7 @@ const KB = [
   {
     id: 'profile',
     patterns: ['profile', 'my info', 'personal details', 'update email', 'change phone', 'account settings'],
-    text: `**Your Profile:**\n\n👤 Alex Johnson\n📧 alexjohnson@novabanc.com\n📱 +1 (555) 234-5678\n🏠 123 Main Street, New York, NY 10001\n⭐ Premium Member since 2021\n\nYou can update your details, manage notifications, view statements and promo offers from Profile.`,
+    text: `**Your Profile:**\n\n👤 Alex Johnson\n📧 alexjohnson@novabank.com\n📱 +1 (555) 234-5678\n🏠 123 Main Street, New York, NY 10001\n⭐ Premium Member since 2021\n\nYou can update your details, manage notifications, view statements and promo offers from Profile.`,
     card: null,
     suggestions: ['Update my email', 'Change my password', 'View my statements'],
     actions: [{ label: '👤 Go to Profile', path: '/profile' }],
@@ -185,7 +185,7 @@ const KB = [
   {
     id: 'fees',
     patterns: ['fee', 'charge', 'cost', 'free', 'pricing', 'how much does it cost'],
-    text: `💚 **NovaBanc Fee Schedule** — almost everything is free!\n\n| Service | Fee |\n|---|---|\n| Internal Transfers | Free |\n| Bill Payments | Free |\n| External Transfers | Free (promo) |\n| In-Network ATM | Free |\n| Overdraft Protection | Free |\n| Monthly Maintenance | Free |\n| Wire Transfer | $15 |\n| International Transfer | $25 |\n\nStandard banking is **100% fee-free** at NovaBanc!`,
+    text: `💚 **NovaBank Fee Schedule** — almost everything is free!\n\n| Service | Fee |\n|---|---|\n| Internal Transfers | Free |\n| Bill Payments | Free |\n| External Transfers | Free (promo) |\n| In-Network ATM | Free |\n| Overdraft Protection | Free |\n| Monthly Maintenance | Free |\n| Wire Transfer | $15 |\n| International Transfer | $25 |\n\nStandard banking is **100% fee-free** at NovaBank!`,
     card: null,
     suggestions: ['How do I transfer money?', 'What is my balance?', 'Contact support'],
     actions: [],
@@ -193,7 +193,7 @@ const KB = [
   {
     id: 'atm',
     patterns: ['atm', 'cash', 'withdraw', 'nearest atm', 'find atm', 'cash out'],
-    text: `🏧 **Finding a NovaBanc ATM:**\n\n• There are **12,000+ in-network ATMs** across the US\n• Use the **NovaBanc mobile app** → ATM Finder to locate the nearest one\n• In-network withdrawals are always **free**\n• Out-of-network ATMs charge **$2.50 + bank fee**\n\n📍 **Nearest ATMs to you:**\n1. 5th Ave Branch — 0.3 miles\n2. Times Sq Kiosk — 0.7 miles\n3. Grand Central — 1.1 miles`,
+    text: `🏧 **Finding a NovaBank ATM:**\n\n• There are **12,000+ in-network ATMs** across the US\n• Use the **NovaBank mobile app** → ATM Finder to locate the nearest one\n• In-network withdrawals are always **free**\n• Out-of-network ATMs charge **$2.50 + bank fee**\n\n📍 **Nearest ATMs to you:**\n1. 5th Ave Branch — 0.3 miles\n2. Times Sq Kiosk — 0.7 miles\n3. Grand Central — 1.1 miles`,
     card: null,
     suggestions: ['What are the withdrawal limits?', 'Can I deposit at an ATM?', 'Contact support'],
     actions: [],
@@ -201,7 +201,7 @@ const KB = [
   {
     id: 'exchange',
     patterns: ['exchange rate', 'currency', 'convert', 'forex', 'international', 'foreign currency', 'usd to', 'eur', 'gbp'],
-    text: `💱 **Today's Exchange Rates** (as of ${new Date().toLocaleDateString()}):\n\n🇺🇸 USD → 🇪🇺 EUR: **0.9218**\n🇺🇸 USD → 🇬🇧 GBP: **0.7891**\n🇺🇸 USD → 🇯🇵 JPY: **149.34**\n🇺🇸 USD → 🇨🇦 CAD: **1.3562**\n🇺🇸 USD → 🇦🇺 AUD: **1.5234**\n🇺🇸 USD → 🇮🇳 INR: **83.15**\n\n📊 NovaBanc charges **no currency conversion fee** on international purchases.`,
+    text: `💱 **Today's Exchange Rates** (as of ${new Date().toLocaleDateString()}):\n\n🇺🇸 USD → 🇪🇺 EUR: **0.9218**\n🇺🇸 USD → 🇬🇧 GBP: **0.7891**\n🇺🇸 USD → 🇯🇵 JPY: **149.34**\n🇺🇸 USD → 🇨🇦 CAD: **1.3562**\n🇺🇸 USD → 🇦🇺 AUD: **1.5234**\n🇺🇸 USD → 🇮🇳 INR: **83.15**\n\n📊 NovaBank charges **no currency conversion fee** on international purchases.`,
     card: null,
     suggestions: ['International transfer fees', 'How to send money abroad', 'What are the fees?'],
     actions: [],
@@ -233,7 +233,7 @@ const KB = [
   {
     id: 'support',
     patterns: ['support', 'help me', 'contact', 'call', 'customer service', 'agent', 'human', 'speak to someone'],
-    text: `📞 **NovaBanc Support:**\n\n🕐 Available 24/7\n\n• **Phone:** 1-800-NOVA-BNK (668-2265)\n• **Email:** support@novabanc.com\n• **Live Chat:** Available on novabanc.com\n• **In-App:** Profile → Help & Support\n\n💡 Average wait time right now: **< 2 minutes**`,
+    text: `📞 **NovaBank Support:**\n\n🕐 Available 24/7\n\n• **Phone:** 1-800-NOVA-BNK (668-2265)\n• **Email:** support@novabank.com\n• **Live Chat:** Available on novabank.com\n• **In-App:** Profile → Help & Support\n\n💡 Average wait time right now: **< 2 minutes**`,
     card: null,
     suggestions: ['Report a fraud', 'Dispute a transaction', 'Close my account'],
     actions: [],
@@ -249,7 +249,7 @@ const KB = [
   {
     id: 'logout',
     patterns: ['logout', 'sign out', 'log out', 'exit'],
-    text: `To **sign out** of NovaBanc:\n\n• Click the **Logout** button at the bottom of the left sidebar\n• You'll be redirected to the login page\n\n🔒 For your security:\n• Sessions auto-expire after **10 minutes** of inactivity\n• Always log out on shared or public devices`,
+    text: `To **sign out** of NovaBank:\n\n• Click the **Logout** button at the bottom of the left sidebar\n• You'll be redirected to the login page\n\n🔒 For your security:\n• Sessions auto-expire after **10 minutes** of inactivity\n• Always log out on shared or public devices`,
     card: null,
     suggestions: ['Security settings', 'Change my password', 'Trusted devices'],
     actions: [],
@@ -645,7 +645,7 @@ export default function ChatBot() {
   const [minimized,  setMinimized]  = useState(false)
   const [messages,   setMessages]   = useState([{
     type: 'bot', id: 'welcome',
-    text: `Hi! I'm **Nova**, your NovaBanc AI assistant. 👋\n\nI can help with balances, transactions, investments, transfers, security and more.\n\nHow can I help you today?`,
+    text: `Hi! I'm **Nova**, your NovaBank AI assistant. 👋\n\nI can help with balances, transactions, investments, transfers, security and more.\n\nHow can I help you today?`,
     card: null, actions: [],
     suggestions: ['What is my balance?', 'Show my transactions', 'How is my portfolio?'],
     time: getTime(),
@@ -770,7 +770,7 @@ export default function ChatBot() {
               <div>
                 <div className="chatbot-header-name">{BOT_NAME} <span className="header-ai-tag">AI</span></div>
                 <div className="chatbot-header-status">
-                  {typing ? '✦ typing...' : '● Online · NovaBanc Assistant'}
+                  {typing ? '✦ typing...' : '● Online · NovaBank Assistant'}
                 </div>
               </div>
             </div>

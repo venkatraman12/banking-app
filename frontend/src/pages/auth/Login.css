@@ -69,18 +69,6 @@
   line-height: 1;
 }
 
-.login-brand-tag {
-  font-size: 11px;
-  font-weight: 700;
-  color: #a5b4fc;
-  background: rgba(99,102,241,0.22);
-  border: 1px solid rgba(99,102,241,0.35);
-  border-radius: 6px;
-  padding: 2px 6px;
-  margin-left: 4px;
-  vertical-align: middle;
-  letter-spacing: 0.3px;
-}
 
 .login-hero {
   position: relative;
@@ -868,4 +856,142 @@
   .login-right { padding: 24px 16px; }
   .otp-box-input { width: 44px; height: 54px; font-size: 22px; }
   .otp-inputs-row { gap: 7px; }
+}
+
+/* ── Glass panels (activity log + cookie) ── */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 14px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.07);
+  overflow: hidden;
+  margin-top: 12px;
+}
+
+[data-theme="dark"] .glass-panel {
+  background: rgba(30, 41, 59, 0.75);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.glass-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary, #1e293b);
+  text-align: left;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.glass-panel-header--static {
+  cursor: default;
+}
+
+[data-theme="dark"] .glass-panel-header {
+  border-bottom-color: rgba(255, 255, 255, 0.07);
+}
+
+.glass-panel-count {
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(99, 102, 241, 0.15);
+  color: #6366f1;
+  padding: 1px 6px;
+  border-radius: 8px;
+}
+
+.glass-panel-chevron {
+  margin-left: auto;
+  transition: transform 0.2s;
+  color: var(--text-secondary, #64748b);
+}
+
+.glass-panel-chevron--open {
+  transform: rotate(180deg);
+}
+
+.glass-panel-body {
+  padding: 8px 14px;
+}
+
+/* Log rows */
+.log-entry {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  font-size: 12px;
+}
+
+.log-entry:last-child { border-bottom: none; }
+
+.log-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.log-dot--success { background: #10b981; }
+.log-dot--danger  { background: #ef4444; }
+.log-dot--warning { background: #f59e0b; }
+.log-dot--info    { background: #3b82f6; }
+
+.log-label {
+  font-weight: 600;
+  color: var(--text-primary, #1e293b);
+  flex: 1;
+}
+
+.log-detail-chip {
+  font-size: 10px;
+  color: var(--text-secondary, #64748b);
+  background: rgba(0, 0, 0, 0.05);
+  padding: 1px 6px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+[data-theme="dark"] .log-detail-chip {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.log-ts {
+  font-size: 10px;
+  color: var(--text-secondary, #94a3b8);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Cookie rows */
+.cookie-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  font-size: 11px;
+}
+
+.cookie-row:last-child { border-bottom: none; }
+
+.cookie-key {
+  color: var(--text-secondary, #64748b);
+  font-weight: 500;
+}
+
+.cookie-val {
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--text-primary, #1e293b);
+  font-weight: 600;
 }

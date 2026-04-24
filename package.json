@@ -1,0 +1,24 @@
+{
+  "name": "banking-app",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently --names \"backend,frontend\" --prefix-colors \"cyan,magenta\" \"cd python_backend && python3 -m uvicorn main:app --reload --port 4000\" \"cd frontend && npm run dev\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/venkatraman12/banking-app.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/venkatraman12/banking-app/issues"
+  },
+  "homepage": "https://github.com/venkatraman12/banking-app#readme",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

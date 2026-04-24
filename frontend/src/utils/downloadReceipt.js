@@ -39,7 +39,7 @@ export function downloadReceipt(data) {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NovaBanc Receipt — ${data.reference}</title>
+  <title>NovaBank Receipt — ${data.reference}</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -121,9 +121,9 @@ export function downloadReceipt(data) {
 
     <div class="receipt-footer">
       <p>
-        <strong>NovaBanc Financial Services</strong><br />
+        <strong>NovaBank Financial Services</strong><br />
         This is an official transaction receipt. Please retain for your records.<br />
-        For support, contact us at support@novabanc.com
+        For support, contact us at support@novabank.com
       </p>
     </div>
   </div>
@@ -134,7 +134,7 @@ export function downloadReceipt(data) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `NovaBanc_Receipt_${data.reference}.html`
+  a.download = `NovaBank_Receipt_${data.reference}.html`
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)

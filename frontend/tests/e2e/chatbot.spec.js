@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 
 const BASE     = 'http://localhost:3000'
-const EMAIL    = 'demo@novabanc.com'
+const EMAIL    = 'demo@novabank.com'
 const PASSWORD = 'password'
 
 async function typeInto(page, selector, text) {
@@ -104,7 +104,7 @@ test.describe('ChatBot — Window UI', () => {
   })
 
   test('header shows assistant label', async ({ page }) => {
-    await expect(page.locator('.chatbot-header-status')).toContainText('NovaBanc Assistant')
+    await expect(page.locator('.chatbot-header-status')).toContainText('NovaBank Assistant')
   })
 
   test('welcome message is shown on open', async ({ page }) => {

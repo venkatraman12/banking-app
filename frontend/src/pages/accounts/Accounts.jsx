@@ -1,42 +1,59 @@
-import React, { useState } from 'react'
-import Prv from '../../components/Prv'
+import React, { useEffect, useState } from 'react'
+import Prv from '../../components/Prv/Prv'
+import { api } from '../../api/client'
 import './Accounts.css'
 
-const accounts = [
-  {
-    id: 1, name: 'Checking Account', number: '4821 8834 2901 4821',
-    balance: 12450.75, type: 'Checking', status: 'Active',
-    bank: 'NovaBanc', opened: 'Jan 2020', color: '#1a56db',
-    income: 5500, expenses: 3200,
-  },
-  {
-    id: 2, name: 'Savings Account', number: '2934 5512 7823 2934',
-    balance: 34820.00, type: 'Savings', status: 'Active',
-    bank: 'NovaBanc', opened: 'Mar 2019', color: '#0ea5e9',
-    income: 1200, expenses: 0,
-  },
-  {
-    id: 3, name: 'Investment Account', number: '7610 4421 3310 7610',
-    balance: 89340.50, type: 'Investment', status: 'Active',
-    bank: 'NovaBanc', opened: 'Sep 2021', color: '#8b5cf6',
-    income: 4200, expenses: 0,
-  },
-]
+const TYPE_COLORS = {
+  CHECKING:   '#1a56db',
+  SAVINGS:    '#0ea5e9',
+  INVESTMENT: '#8b5cf6',
+}
+
+const formatType = (t) => t ? (t.charAt(0) + t.slice(1).toLowerCase()) : ''
 
 export default function Accounts() {
-  const [selected, setSelected] = useState(accounts[0])
-  const [frozenAccounts, setFrozenAccounts] = useState(new Set())
+  const [accounts, setAccounts] = useState([])
+  const [selected, setSelected] = useState(null)
+  const [loading, setLoading]   = useState(true)
+  const [error, setError]       = useState('')
 
-  const isFrozen = frozenAccounts.has(selected.id)
+  useEffect(() => {
+    api.getAccounts()
+      .then(res => {
+        const list = res.data.map(a => ({
+          ...a,
+          color: TYPE_COLORS[a.type] || '#1a56db',
+          typeLabel: formatType(a.type),
+          opened: new Date(a.createdAt).toLocaleDateString('en-US',
+            { month: 'short', year: 'numeric' }),
+        }))
+        setAccounts(list)
+        setSelected(list[0] || null)
+      })
+      .catch(err => setError(err.message || 'Failed to load accounts'))
+      .finally(() => setLoading(false))
+  }, [])
 
-  const toggleFreeze = () => {
-    setFrozenAccounts(prev => {
-      const next = new Set(prev)
-      if (next.has(selected.id)) next.delete(selected.id)
-      else next.add(selected.id)
-      return next
-    })
+  const isFrozen = selected?.status === 'FROZEN'
+
+  const toggleFreeze = async () => {
+    if (!selected) return
+    const next = isFrozen ? 'ACTIVE' : 'FROZEN'
+    try {
+      const res = await api.updateAccount(selected.id, { status: next })
+      const updated = { ...selected, ...res.data,
+                        color: selected.color, typeLabel: selected.typeLabel,
+                        opened: selected.opened }
+      setSelected(updated)
+      setAccounts(prev => prev.map(a => a.id === updated.id ? updated : a))
+    } catch (err) {
+      setError(err.message || 'Could not update account')
+    }
   }
+
+  if (loading) return <div className="accounts-page"><p>Loading accounts…</p></div>
+  if (error)   return <div className="accounts-page"><p className="error">{error}</p></div>
+  if (!selected) return <div className="accounts-page"><p>No accounts yet.</p></div>
 
   return (
     <div className="accounts-page">
@@ -63,24 +80,24 @@ export default function Accounts() {
                     <line x1="1" y1="10" x2="23" y2="10"/>
                   </svg>
                 </div>
-                <span className={`account-status ${frozenAccounts.has(account.id) ? 'status--frozen' : account.status === 'Active' ? 'status--active' : ''}`}>
-                  {frozenAccounts.has(account.id) ? 'Frozen' : account.status}
+                <span className={`account-status ${account.status === 'FROZEN' ? 'status--frozen' : 'status--active'}`}>
+                  {account.status === 'FROZEN' ? 'Frozen' : formatType(account.status)}
                 </span>
               </div>
               <div className="account-card-name">{account.name}</div>
               <div className="account-card-balance">
-                <Prv>${account.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</Prv>
+                <Prv>${Number(account.balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}</Prv>
               </div>
-              <div className="account-card-number">{account.number.slice(-8)}</div>
+              <div className="account-card-number">{account.number}</div>
             </button>
           ))}
         </div>
 
         <div className="account-detail card">
           <div className="detail-hero" style={{ background: `linear-gradient(135deg, ${selected.color}, ${selected.color}cc)` }}>
-            <div className="detail-hero-type">{selected.type} Account</div>
+            <div className="detail-hero-type">{selected.typeLabel} Account</div>
             <div className="detail-hero-balance">
-              <Prv>${selected.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</Prv>
+              <Prv>${Number(selected.balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}</Prv>
             </div>
             <div className="detail-hero-number">{selected.number}</div>
           </div>
@@ -95,25 +112,14 @@ export default function Accounts() {
           )}
 
           <div className="detail-body">
-            <div className="detail-stats">
-              <div className="detail-stat">
-                <span className="detail-stat-label">Monthly Income</span>
-                <span className="detail-stat-value positive">+${selected.income.toLocaleString()}</span>
-              </div>
-              <div className="detail-stat">
-                <span className="detail-stat-label">Monthly Expenses</span>
-                <span className="detail-stat-value negative">${selected.expenses.toLocaleString()}</span>
-              </div>
-            </div>
-
             <div className="detail-info-grid">
               <div className="detail-info-item">
                 <span className="detail-info-label">Account Type</span>
-                <span className="detail-info-value">{selected.type}</span>
+                <span className="detail-info-value">{selected.typeLabel}</span>
               </div>
               <div className="detail-info-item">
                 <span className="detail-info-label">Bank</span>
-                <span className="detail-info-value">{selected.bank}</span>
+                <span className="detail-info-value">NovaBank</span>
               </div>
               <div className="detail-info-item">
                 <span className="detail-info-label">Opened</span>
@@ -121,7 +127,7 @@ export default function Accounts() {
               </div>
               <div className="detail-info-item">
                 <span className="detail-info-label">Status</span>
-                <span className="detail-info-value">{selected.status}</span>
+                <span className="detail-info-value">{formatType(selected.status)}</span>
               </div>
             </div>
 

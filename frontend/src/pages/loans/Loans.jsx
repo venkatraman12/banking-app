@@ -1,31 +1,58 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
+import { api } from '../../api/client'
 import './Loans.css'
 
-const activeLoans = [
-  {
-    id: 1, name: 'Home Mortgage', amount: 350000, outstanding: 285000,
-    rate: 3.25, monthly: 1520, nextDue: 'Mar 15', term: '30 years', icon: '🏠',
-    paid: 18.5, color: '#1a56db',
-  },
-  {
-    id: 2, name: 'Auto Loan', amount: 28000, outstanding: 12400,
-    rate: 4.9, monthly: 485, nextDue: 'Mar 20', term: '5 years', icon: '🚗',
-    paid: 55.7, color: '#0ea5e9',
-  },
-  {
-    id: 3, name: 'Personal Loan', amount: 10000, outstanding: 3200,
-    rate: 7.5, monthly: 320, nextDue: 'Mar 25', term: '3 years', icon: '💳',
-    paid: 68, color: '#8b5cf6',
-  },
-]
+const TYPE_UI = {
+  HOME:      { icon: '🏠', color: '#1a56db', termLabel: (m) => `${Math.round(m / 12)} years` },
+  AUTO:      { icon: '🚗', color: '#0ea5e9', termLabel: (m) => `${Math.round(m / 12)} years` },
+  PERSONAL:  { icon: '💳', color: '#8b5cf6', termLabel: (m) => `${m} months` },
+  BUSINESS:  { icon: '💼', color: '#059669', termLabel: (m) => `${m} months` },
+  STUDENT:   { icon: '🎓', color: '#d97706', termLabel: (m) => `${Math.round(m / 12)} years` },
+}
+
+const shortDate = (iso) => iso
+  ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  : '—'
+
+function hydrate(l) {
+  const ui = TYPE_UI[l.type] || TYPE_UI.PERSONAL
+  const paid = l.principal
+    ? Math.max(0, Math.min(100, (1 - l.outstanding / l.principal) * 100))
+    : 0
+  return {
+    id: l.id,
+    name: l.name,
+    amount: l.principal,
+    outstanding: l.outstanding,
+    rate: l.rate,
+    monthly: l.monthly,
+    nextDue: shortDate(l.nextDueDate),
+    term: ui.termLabel(l.termMonths || 0),
+    icon: ui.icon,
+    color: ui.color,
+    paid: Number(paid.toFixed(1)),
+  }
+}
 
 export default function Loans() {
+  const [activeLoans, setActiveLoans] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError]     = useState('')
   const [applyOpen, setApplyOpen] = useState(false)
   const [loanType, setLoanType] = useState('personal')
   const [loanAmount, setLoanAmount] = useState('5000')
 
+  useEffect(() => {
+    api.getLoans()
+      .then(res => setActiveLoans(res.data.map(hydrate)))
+      .catch(err => setError(err.message || 'Failed to load loans'))
+      .finally(() => setLoading(false))
+  }, [])
+
   const totalOutstanding = activeLoans.reduce((s, l) => s + l.outstanding, 0)
   const totalMonthly = activeLoans.reduce((s, l) => s + l.monthly, 0)
+
+  if (loading) return <div className="loans-page"><p>Loading loans…</p></div>
 
   return (
     <div className="loans-page">
@@ -38,6 +65,8 @@ export default function Loans() {
           {applyOpen ? 'Cancel' : 'Apply for Loan'}
         </button>
       </div>
+
+      {error && <div className="card" style={{ padding: 12, color: 'var(--danger)' }}>{error}</div>}
 
       {applyOpen && (
         <div className="card loan-apply">

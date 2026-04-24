@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { SecurityProvider, useSecurity } from './context/SecurityContext'
 import { ToastProvider } from './context/ToastContext'
+import { api, tokenStore } from './api/client'
 import Login from './pages/auth/Login'
 import AppLayout from './components/layout/AppLayout'
 import Dashboard from './pages/dashboard/Dashboard'
@@ -15,20 +16,38 @@ import Transfer from './pages/transfer/Transfer'
 import Savings from './pages/savings/Savings'
 import Investments from './pages/investments/Investments'
 import Analytics from './pages/analytics/Analytics'
+import Security from './pages/security/Security'
+import ApiKeys from './pages/api-keys/ApiKeys'
 
 const INACTIVITY_TIMEOUT = 5 * 60 * 1000
 const WARN_BEFORE = 60 * 1000
 
-function AppContent({ darkMode, onToggleDark }) {
+function AppContent({ themeMode, isDark, onSetTheme }) {
   const { privacyMode } = useSecurity()
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [currentUser, setCurrentUser]         = useState(null)
+  const [isAuthenticated, setIsAuthenticated] = useState(() => !!tokenStore.get())
+  const [currentUser, setCurrentUser]         = useState(() => tokenStore.user())
   const [showTimeoutWarning, setShowTimeoutWarning] = useState(false)
   const [countdown, setCountdown] = useState(60)
 
   const warnTimer          = useRef(null)
   const logoutTimer        = useRef(null)
   const countdownInterval  = useRef(null)
+
+  // On mount, if we have a token, verify it still works; otherwise clear.
+  useEffect(() => {
+    if (!tokenStore.get()) return
+    api.me()
+      .then(res => {
+        setCurrentUser(res.data)
+        tokenStore.setUser(res.data)
+        setIsAuthenticated(true)
+      })
+      .catch(() => {
+        tokenStore.clear()
+        setIsAuthenticated(false)
+        setCurrentUser(null)
+      })
+  }, [])
 
   const handleLogin = (user) => {
     setCurrentUser(user)
@@ -40,6 +59,9 @@ function AppContent({ darkMode, onToggleDark }) {
     clearTimeout(logoutTimer.current)
     clearInterval(countdownInterval.current)
     setShowTimeoutWarning(false)
+    const refresh = tokenStore.refresh()
+    if (refresh) api.logout(refresh).catch(() => {})
+    tokenStore.clear()
     setCurrentUser(null)
     setIsAuthenticated(false)
   }, [])
@@ -113,7 +135,7 @@ function AppContent({ darkMode, onToggleDark }) {
           path="/"
           element={
             isAuthenticated
-              ? <AppLayout user={currentUser} onLogout={handleLogout} darkMode={darkMode} onToggleDark={onToggleDark} />
+              ? <AppLayout user={currentUser} onLogout={handleLogout} themeMode={themeMode} isDark={isDark} onSetTheme={onSetTheme} />
               : <Navigate to="/login" replace />
           }
         >
@@ -128,7 +150,9 @@ function AppContent({ darkMode, onToggleDark }) {
           <Route path="savings"      element={<Savings />} />
           <Route path="investments"  element={<Investments />} />
           <Route path="analytics"    element={<Analytics />} />
-          <Route path="profile"      element={<Profile user={currentUser} />} />
+          <Route path="security"     element={<Security />} />
+          <Route path="api-keys"     element={<ApiKeys />} />
+          <Route path="profile"      element={<Profile user={currentUser} themeMode={themeMode} onSetTheme={onSetTheme} />} />
         </Route>
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
@@ -137,26 +161,34 @@ function AppContent({ darkMode, onToggleDark }) {
 }
 
 export default function App() {
-  const [darkMode, setDarkMode] = useState(() => {
-    return localStorage.getItem('nova-theme') === 'dark'
-  })
+  const [themeMode, setThemeMode] = useState(() =>
+    localStorage.getItem('nova-theme') || 'system'
+  )
+  const [systemDark, setSystemDark] = useState(() =>
+    window.matchMedia('(prefers-color-scheme: dark)').matches
+  )
+
+  // Track OS-level preference changes in real time
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    const handler = e => setSystemDark(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+
+  const isDark = themeMode === 'dark' || (themeMode === 'system' && systemDark)
 
   useEffect(() => {
     const root = document.documentElement
-    if (darkMode) {
-      root.setAttribute('data-theme', 'dark')
-      localStorage.setItem('nova-theme', 'dark')
-    } else {
-      root.removeAttribute('data-theme')
-      localStorage.setItem('nova-theme', 'light')
-    }
-  }, [darkMode])
+    isDark ? root.setAttribute('data-theme', 'dark') : root.removeAttribute('data-theme')
+    localStorage.setItem('nova-theme', themeMode)
+  }, [isDark, themeMode])
 
   return (
     <SecurityProvider>
       <ToastProvider>
         <BrowserRouter>
-          <AppContent darkMode={darkMode} onToggleDark={() => setDarkMode(d => !d)} />
+          <AppContent themeMode={themeMode} isDark={isDark} onSetTheme={setThemeMode} />
         </BrowserRouter>
       </ToastProvider>
     </SecurityProvider>

@@ -1,14 +1,9 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { validateTransferForm } from '../../utils/validate'
 import { downloadReceipt } from '../../utils/downloadReceipt'
 import { detectTransactionAnomaly } from '../../utils/security'
+import { api } from '../../api/client'
 import './Transfer.css'
-
-const myAccounts = [
-  { id: 'chk', label: 'Checking ****4821', balance: 12450.75 },
-  { id: 'sav', label: 'Savings ****2934', balance: 34820.00 },
-  { id: 'inv', label: 'Investment ****7610', balance: 89340.50 },
-]
 
 const beneficiaries = [
   { id: 1, name: 'John Smith', bank: 'Chase Bank', account: '****3892', avatar: 'J' },
@@ -25,7 +20,12 @@ const recentTransfers = [
 
 const STEPS = ['Details', 'Review', 'Done']
 
+const formatType = (t) => t ? (t.charAt(0) + t.slice(1).toLowerCase()) : ''
+
 export default function Transfer() {
+  const [myAccounts, setMyAccounts] = useState([])
+  const [submitError, setSubmitError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
   const [step, setStep] = useState(0)
   const [mode, setMode] = useState('own') // 'own' | 'external'
   const [form, setForm] = useState({ from: '', to: '', beneficiary: null, amount: '', note: '', scheduled: false, schedDate: '' })
@@ -33,6 +33,16 @@ export default function Transfer() {
   const [ref, setRef] = useState('')
   const [anomalyWarnings, setAnomalyWarnings] = useState([])
   const [anomalyAcknowledged, setAnomalyAcknowledged] = useState(false)
+
+  useEffect(() => {
+    api.getAccounts().then(res => {
+      setMyAccounts(res.data.map(a => ({
+        id: a.id,
+        label: `${formatType(a.type)} ${a.number}`,
+        balance: Number(a.balance),
+      })))
+    }).catch(() => {})
+  }, [])
 
   const fromAcc = myAccounts.find(a => a.id === form.from)
 
@@ -57,9 +67,37 @@ export default function Transfer() {
     setStep(1)
   }
 
-  const handleConfirm = () => {
-    setStep(2)
-    setRef(`TXN${Date.now().toString().slice(-8)}`)
+  const handleConfirm = async () => {
+    setSubmitError('')
+    if (mode === 'external') {
+      // External transfers aren't backed by the API yet — simulate.
+      setRef(`TXN${Date.now().toString().slice(-8)}`)
+      setStep(2)
+      return
+    }
+    setSubmitting(true)
+    try {
+      const res = await api.transfer({
+        from_account_id: form.from,
+        to_account_id: form.to,
+        amount: Number(form.amount),
+        description: form.note || null,
+      })
+      setRef(res.data.reference || res.data.id)
+      setStep(2)
+      // Refresh account balances
+      api.getAccounts().then(r => {
+        setMyAccounts(r.data.map(a => ({
+          id: a.id,
+          label: `${formatType(a.type)} ${a.number}`,
+          balance: Number(a.balance),
+        })))
+      }).catch(() => {})
+    } catch (err) {
+      setSubmitError(err.message || 'Transfer failed')
+    } finally {
+      setSubmitting(false)
+    }
   }
   const handleReset = () => { setStep(0); setForm({ from: '', to: '', beneficiary: null, amount: '', note: '', scheduled: false, schedDate: '' }) }
 
@@ -235,15 +273,16 @@ export default function Transfer() {
               <div className="review-fee">
                 <span>Transfer Fee</span><strong style={{ color: 'var(--success)' }}>Free</strong>
               </div>
+              {submitError && <div className="anomaly-item anomaly-item--danger">{submitError}</div>}
               <div className="review-actions">
-                <button className="btn btn-outline" onClick={() => setStep(0)}>← Back</button>
+                <button className="btn btn-outline" onClick={() => setStep(0)} disabled={submitting}>← Back</button>
                 <button
                   className="btn btn-primary"
                   onClick={handleConfirm}
-                  disabled={anomalyWarnings.length > 0 && !anomalyAcknowledged}
+                  disabled={submitting || (anomalyWarnings.length > 0 && !anomalyAcknowledged)}
                   title={anomalyWarnings.length > 0 && !anomalyAcknowledged ? 'Please acknowledge the security warning above' : ''}
                 >
-                  Confirm Transfer
+                  {submitting ? 'Processing…' : 'Confirm Transfer'}
                 </button>
               </div>
             </div>
@@ -285,7 +324,7 @@ export default function Transfer() {
 
           <div className="card transfer-tip">
             <div className="tip-icon">💡</div>
-            <p>Transfers between your NovaBanc accounts are instant and free, 24/7.</p>
+            <p>Transfers between your NovaBank accounts are instant and free, 24/7.</p>
           </div>
         </div>
       </div>

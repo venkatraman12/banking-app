@@ -2,23 +2,25 @@ import React, { Profiler, useState, useEffect, useRef, useCallback } from 'react
 import { useNavigate, Link } from 'react-router-dom'
 import { useSecurity } from '../../context/SecurityContext'
 import { useToast } from '../../context/ToastContext'
-import Prv from '../../components/Prv'
+import Prv from '../../components/Prv/Prv'
+import { api } from '../../api/client'
 import './Dashboard.css'
 
-/* ── Data ── */
-const accounts = [
-  { id: 1, name: 'Checking Account',   number: '****4821', balance: 12450.75, type: 'checking',   color: '#4338ca', bg: '#eef2ff', trend: +3.2 },
-  { id: 2, name: 'Savings Account',    number: '****2934', balance: 34820.00, type: 'savings',    color: '#0ea5e9', bg: '#e0f2fe', trend: +1.8 },
-  { id: 3, name: 'Investment Account', number: '****7610', balance: 89340.50, type: 'investment', color: '#7c3aed', bg: '#f5f3ff', trend: +5.4 },
-]
+/* ── UI-only decoration by account type ── */
+const TYPE_UI = {
+  CHECKING:   { color: '#4338ca', bg: '#eef2ff', trend: +3.2 },
+  SAVINGS:    { color: '#0ea5e9', bg: '#e0f2fe', trend: +1.8 },
+  INVESTMENT: { color: '#7c3aed', bg: '#f5f3ff', trend: +5.4 },
+}
 
-const recentTransactions = [
-  { id: 1, name: 'Netflix Subscription',  category: 'Entertainment', amount: -15.99,   date: 'Mar 10', icon: '🎬', note: 'Monthly plan · Auto-renews' },
-  { id: 2, name: 'Salary Deposit',        category: 'Income',        amount: 5500.00,  date: 'Mar 9',  icon: '💼', note: 'Acme Corp · Direct deposit' },
-  { id: 3, name: 'Whole Foods Market',    category: 'Groceries',     amount: -87.43,   date: 'Mar 8',  icon: '🛒', note: 'Weekly groceries' },
-  { id: 4, name: 'Electric Bill',         category: 'Utilities',     amount: -124.00,  date: 'Mar 7',  icon: '⚡', note: 'City Power Co.' },
-  { id: 5, name: 'Amazon Purchase',       category: 'Shopping',      amount: -234.99,  date: 'Mar 6',  icon: '📦', note: 'Order #114-6382-9124' },
-]
+const CATEGORY_ICON = {
+  Groceries: '🛒', Transport: '🚗', Entertainment: '🎬', Income: '💼',
+  Dining: '🍽️', Food: '🍽️', Shopping: '📦', Utilities: '⚡',
+  Housing: '🏠', Health: '💊',
+}
+
+const formatType = (t) => t ? (t.charAt(0) + t.slice(1).toLowerCase()) : ''
+const shortDate  = (iso) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 
 const quickActions = [
   { label: 'Send Money',  color: '#4338ca', bg: '#eef2ff', path: '/transfer',     icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> },
@@ -229,13 +231,62 @@ export default function Dashboard({ user }) {
   const navigate = useNavigate()
   const { privacyMode } = useSecurity()
   const toast = useToast()
-  const totalBalance = accounts.reduce((sum, a) => sum + a.balance, 0)
   const firstName = user?.name?.split(' ')[0] || 'Alex'
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 
+  const [accounts, setAccounts]     = useState([])
+  const [recentTx, setRecentTx]     = useState([])
+  const [stats, setStats]           = useState({ totalIncome: 0, totalSpend: 0, net: 0 })
+  const [loading, setLoading]       = useState(true)
+
+  useEffect(() => {
+    let alive = true
+    Promise.all([api.getAccounts(), api.getTransactions(), api.getTxStats()])
+      .then(([accRes, txRes, statsRes]) => {
+        if (!alive) return
+        const accountIds = new Set(accRes.data.map(a => a.id))
+        const mappedAccounts = accRes.data.map(a => {
+          const ui = TYPE_UI[a.type] || TYPE_UI.CHECKING
+          return {
+            id: a.id,
+            name: a.name || `${formatType(a.type)} Account`,
+            number: a.number,
+            balance: Number(a.balance),
+            type: a.type.toLowerCase(),
+            ...ui,
+          }
+        })
+        const mappedTx = txRes.data.slice(0, 5).map(t => {
+          const amt = Number(t.amount)
+          const incoming = t.toAccountId && accountIds.has(t.toAccountId)
+          const signed = incoming ? amt : -amt
+          return {
+            id: t.id,
+            name: t.description || t.type,
+            category: t.category || formatType(t.type),
+            amount: signed,
+            date: shortDate(t.createdAt),
+            icon: CATEGORY_ICON[t.category] || (incoming ? '💰' : '💳'),
+            note: t.reference ? `Ref ${t.reference}` : (t.description || '—'),
+            status: t.status,
+          }
+        })
+        setAccounts(mappedAccounts)
+        setRecentTx(mappedTx)
+        setStats(statsRes.data)
+      })
+      .catch(() => {})
+      .finally(() => { if (alive) setLoading(false) })
+    return () => { alive = false }
+  }, [])
+
+  const totalBalance = accounts.reduce((sum, a) => sum + a.balance, 0)
   const animatedBalance = useCountUp(totalBalance, 1400)
-  const animatedIncome  = useCountUp(5500, 1200)
-  const animatedSpend   = useCountUp(3462.41, 1200)
+  const animatedIncome  = useCountUp(stats.totalIncome || 0, 1200)
+  const animatedSpend   = useCountUp(stats.totalSpend  || 0, 1200)
+  const netSavings = (stats.totalIncome || 0) - (stats.totalSpend || 0)
+  const spendPct   = stats.totalIncome ? Math.min(100, (stats.totalSpend / stats.totalIncome) * 100) : 0
+  const savingsPct = stats.totalIncome ? Math.max(0, (netSavings / stats.totalIncome) * 100) : 0
 
   const [expandedTx, setExpandedTx] = useState(null)
   const [time, setTime] = useState(new Date())
@@ -309,12 +360,14 @@ export default function Dashboard({ user }) {
           <div className="hero-stat">
             <span>Monthly Spend</span>
             <strong><Prv>${animatedSpend.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Prv></strong>
-            <div className="hero-stat-bar"><div className="hero-stat-bar-fill" style={{ width: `${(3462.41/5500)*100}%`, background: '#fca5a5' }} /></div>
+            <div className="hero-stat-bar"><div className="hero-stat-bar-fill" style={{ width: `${spendPct}%`, background: '#fca5a5' }} /></div>
           </div>
           <div className="hero-stat">
             <span>Net Savings</span>
-            <strong style={{ color: '#6ee7b7' }}><Prv>$2,037.59</Prv></strong>
-            <div className="hero-stat-bar"><div className="hero-stat-bar-fill" style={{ width: '37%', background: '#6ee7b7' }} /></div>
+            <strong style={{ color: netSavings >= 0 ? '#6ee7b7' : '#fca5a5' }}>
+              <Prv>${Math.abs(netSavings).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Prv>
+            </strong>
+            <div className="hero-stat-bar"><div className="hero-stat-bar-fill" style={{ width: `${savingsPct}%`, background: '#6ee7b7' }} /></div>
           </div>
         </div>
         <div className="hero-orb hero-orb--1" />
@@ -461,7 +514,7 @@ export default function Dashboard({ user }) {
               <Link to="/transactions" className="card-action">View all →</Link>
             </div>
             <div className="transactions-list">
-              {recentTransactions.map(tx => (
+              {recentTx.map(tx => (
                 <div key={tx.id}>
                   <div
                     className={`tx-item txn-row ${expandedTx === tx.id ? 'tx-item--expanded' : ''}`}

@@ -1,5 +1,5 @@
 /**
- * Performance Test Suite — NovaBanc
+ * Performance Test Suite — NovaBank
  *
  * Uses the browser Navigation Timing API and Chrome DevTools Protocol (CDP)
  * to measure real load times, interaction responsiveness, and resource usage.
@@ -13,7 +13,7 @@
 import { test, expect } from '@playwright/test'
 
 const BASE = 'http://localhost:3000'
-const EMAIL = 'demo@novabanc.com'
+const EMAIL = 'demo@novabank.com'
 const PASSWORD = 'password'
 
 // Disable slowMo for all perf tests — we're measuring real timing
@@ -57,10 +57,16 @@ async function login(page) {
   await page.waitForSelector('#password', { state: 'visible', timeout: 5000 })
   await typeInto(page, '#password', PASSWORD)
   await page.locator('button[type="submit"]').click()
-  // Step 3: OTP (demo code: 123456)
-  await page.waitForSelector('.otp-box-input', { state: 'visible', timeout: 5000 })
+  // Step 3: OTP — read dynamic code from page
+  await page.waitForSelector('.otp-box-input', { state: 'visible', timeout: 10000 })
+  const otpHint = page.locator('.otp-hint-box strong')
+  let otpCode = '123456'
+  try {
+    await otpHint.waitFor({ state: 'visible', timeout: 3000 })
+    otpCode = (await otpHint.textContent()).trim()
+  } catch { /* use fallback */ }
   await page.locator('.otp-box-input').first().click()
-  await page.keyboard.type('123456')
+  await page.keyboard.type(otpCode)
   await page.locator('button[type="submit"]').click()
   await page.waitForURL('**/dashboard', { timeout: 15000 })
 }
@@ -195,10 +201,16 @@ test.describe('PF-2: Dashboard Load After Login', () => {
       await page.waitForSelector('#password', { state: 'visible', timeout: 5000 })
       await typeInto(page, '#password', PASSWORD)
       await page.locator('button[type="submit"]').click()
-      // Step 3: OTP (demo code: 123456)
-      await page.waitForSelector('.otp-box-input', { state: 'visible', timeout: 5000 })
+      // Step 3: OTP — read dynamic code from page
+      await page.waitForSelector('.otp-box-input', { state: 'visible', timeout: 10000 })
+      const otpHint = page.locator('.otp-hint-box strong')
+      let otpCode = '123456'
+      try {
+        await otpHint.waitFor({ state: 'visible', timeout: 3000 })
+        otpCode = (await otpHint.textContent()).trim()
+      } catch { /* use fallback */ }
       await page.locator('.otp-box-input').first().click()
-      await page.keyboard.type('123456')
+      await page.keyboard.type(otpCode)
       await page.locator('button[type="submit"]').click()
       await page.waitForURL('**/dashboard', { timeout: 15000 })
       await page.waitForSelector('h1', { timeout: 5000 })
@@ -314,6 +326,13 @@ test.describe('PF-5: Form Interaction Responsiveness', () => {
   test('account freeze toggle responds within 250ms', async ({ page }) => {
     await measureSidebarNav(page, '/accounts', 'h1')
     await page.waitForSelector('.detail-actions')
+    // If already frozen from a prior test, unfreeze first
+    const unfreezeBtn = page.locator('.detail-actions .btn-success')
+    try {
+      await unfreezeBtn.waitFor({ state: 'visible', timeout: 2000 })
+      await unfreezeBtn.click()
+      await page.locator('.detail-actions .btn-danger').waitFor({ state: 'visible', timeout: 5000 })
+    } catch { /* not frozen — proceed */ }
 
     const elapsed = await measureInteraction(async () => {
       await page.locator('.btn-danger').filter({ hasText: 'Freeze' }).click()

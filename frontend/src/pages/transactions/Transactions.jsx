@@ -1,22 +1,20 @@
-import { useState, Profiler } from 'react'
+import { useEffect, useState, Profiler } from 'react'
+import { api } from '../../api/client'
 import './Transactions.css'
 
-const allTransactions = [
-  { id: 1, name: 'Netflix Subscription', category: 'Entertainment', amount: -15.99, date: '2026-03-10', status: 'Completed', icon: '🎬' },
-  { id: 2, name: 'Salary Deposit', category: 'Income', amount: 5500.00, date: '2026-03-09', status: 'Completed', icon: '💼' },
-  { id: 3, name: 'Whole Foods Market', category: 'Groceries', amount: -87.43, date: '2026-03-08', status: 'Completed', icon: '🛒' },
-  { id: 4, name: 'Electric Bill', category: 'Utilities', amount: -124.00, date: '2026-03-07', status: 'Completed', icon: '⚡' },
-  { id: 5, name: 'Amazon Purchase', category: 'Shopping', amount: -234.99, date: '2026-03-06', status: 'Completed', icon: '📦' },
-  { id: 6, name: 'Uber Ride', category: 'Transport', amount: -18.50, date: '2026-03-06', status: 'Completed', icon: '🚗' },
-  { id: 7, name: 'Rent Payment', category: 'Housing', amount: -1800.00, date: '2026-03-05', status: 'Completed', icon: '🏠' },
-  { id: 8, name: 'Gym Membership', category: 'Health', amount: -49.99, date: '2026-03-05', status: 'Completed', icon: '💪' },
-  { id: 9, name: 'Restaurant Dinner', category: 'Food', amount: -64.20, date: '2026-03-04', status: 'Completed', icon: '🍽️' },
-  { id: 10, name: 'Freelance Payment', category: 'Income', amount: 1200.00, date: '2026-03-03', status: 'Completed', icon: '💻' },
-  { id: 11, name: 'Spotify', category: 'Entertainment', amount: -9.99, date: '2026-03-02', status: 'Completed', icon: '🎵' },
-  { id: 12, name: 'Pharmacy', category: 'Health', amount: -32.50, date: '2026-03-01', status: 'Completed', icon: '💊' },
-]
+const CATEGORY_ICON = {
+  Groceries:     '🛒',
+  Transport:     '🚗',
+  Entertainment: '🎬',
+  Income:        '💼',
+  Dining:        '🍽️',
+  Food:          '🍽️',
+  Shopping:      '📦',
+  Utilities:     '⚡',
+  Housing:       '🏠',
+  Health:        '💊',
+}
 
-const categories = ['All', 'Income', 'Housing', 'Groceries', 'Entertainment', 'Transport', 'Shopping', 'Utilities', 'Health', 'Food']
 
 function exportCSV(transactions) {
   const header = ['Date', 'Name', 'Category', 'Status', 'Amount']
@@ -38,11 +36,42 @@ function exportCSV(transactions) {
 }
 
 export default function Transactions() {
+  const [allTransactions, setAllTransactions] = useState([])
+  const [accountIds, setAccountIds] = useState(new Set())
+  const [loading, setLoading] = useState(true)
+  const [error, setError]     = useState('')
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('All')
   const [type, setType] = useState('All')
   const [sortCol, setSortCol] = useState('date')
   const [sortDir, setSortDir] = useState('desc')
+
+  useEffect(() => {
+    Promise.all([api.getAccounts(), api.getTransactions()])
+      .then(([accRes, txRes]) => {
+        const ids = new Set(accRes.data.map(a => a.id))
+        setAccountIds(ids)
+        const mapped = txRes.data.map(t => {
+          const amt = Number(t.amount)
+          const incoming = t.toAccountId && ids.has(t.toAccountId)
+          const signed = incoming ? amt : -amt
+          return {
+            id: t.id,
+            name: t.description || t.type,
+            category: t.category || t.type,
+            amount: signed,
+            date: t.createdAt.slice(0, 10),
+            status: (t.status || 'COMPLETED').charAt(0) + (t.status || 'COMPLETED').slice(1).toLowerCase(),
+            icon: CATEGORY_ICON[t.category] || (incoming ? '💰' : '💳'),
+          }
+        })
+        setAllTransactions(mapped)
+      })
+      .catch(err => setError(err.message || 'Failed to load transactions'))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const categories = ['All', ...new Set(allTransactions.map(t => t.category))]
 
   const handleSort = (col) => {
     if (sortCol === col) {
@@ -71,6 +100,9 @@ export default function Transactions() {
 
   const totalIn = filtered.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0)
   const totalOut = filtered.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0)
+
+  if (loading) return <div className="transactions-page"><p>Loading transactions…</p></div>
+  if (error)   return <div className="transactions-page"><p className="error">{error}</p></div>
 
   return (
     <Profiler id="Transactions" onRender={(id, phase, actual, base) =>

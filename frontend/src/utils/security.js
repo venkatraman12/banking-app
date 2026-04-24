@@ -134,6 +134,66 @@ export function checkRateLimit(key, maxAttempts = 5, windowMs = 60000) {
   return { allowed: true, remaining: maxAttempts - rateLimitStore[key].length }
 }
 
+// ── IP Risk Analysis ─────────────────────────────────────────────────────────
+const HIGH_RISK_RANGES = [
+  '185.220.', '94.102.49.', '192.42.116.', '198.96.155.',  // known Tor/VPN ranges
+]
+const TOR_EXIT_NODES = new Set(['94.102.49.190', '185.220.101.47', '198.96.155.166'])
+
+export function analyzeIPRisk(ip) {
+  if (!ip || ip.includes('x')) return { score: 50, flags: ['Subnet pattern — exact IP unknown'] }
+  const flags = []
+  let score = 0
+
+  if (TOR_EXIT_NODES.has(ip)) {
+    score += 60
+    flags.push('Known Tor exit node')
+  }
+  if (HIGH_RISK_RANGES.some(r => ip.startsWith(r))) {
+    score += 40
+    flags.push('High-risk IP range')
+  }
+  if (ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('172.')) {
+    score += 10
+    flags.push('Private/internal IP')
+  }
+
+  return { score: Math.min(score, 100), flags }
+}
+
+// ── Country Risk Levels ───────────────────────────────────────────────────────
+const COUNTRY_RISK = {
+  US: 'low', CA: 'low', GB: 'low', DE: 'low', FR: 'low', AU: 'low',
+  JP: 'low', SG: 'low', NL: 'low', CH: 'low',
+  RU: 'high', CN: 'high', KP: 'critical', IR: 'critical',
+  NG: 'medium', PK: 'medium', VN: 'medium', UA: 'medium',
+}
+
+export function countryRisk(countryCode) {
+  return COUNTRY_RISK[countryCode] ?? 'medium'
+}
+
+// ── Behavioral Anomaly Detection ─────────────────────────────────────────────
+// Inspects an array of timestamped events and returns detected anomaly flags.
+export function detectBehaviorAnomalies(events = []) {
+  const anomalies = []
+  if (events.length < 2) return anomalies
+
+  // Rapid-fire events (>5 in under 60s) → automation suspicion
+  const recent = events.filter(e => Date.now() - new Date(e.timestamp).getTime() < 60000)
+  if (recent.length >= 5) {
+    anomalies.push({ type: 'rapid_requests', severity: 'high', message: `${recent.length} events in the last 60s — possible automation` })
+  }
+
+  // Multiple countries in the same session
+  const countries = [...new Set(events.map(e => e.country).filter(Boolean))]
+  if (countries.length > 1) {
+    anomalies.push({ type: 'geo_jump', severity: 'high', message: `Activity from ${countries.length} different countries in one session` })
+  }
+
+  return anomalies
+}
+
 // ── Export Security Report ───────────────────────────────────────────────────
 export function exportSecurityReport({ user, score, scoreChecks, sessions, activity, alerts, twoFAEnabled, trustedDevices }) {
   const now = new Date().toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'medium' })
@@ -162,7 +222,7 @@ export function exportSecurityReport({ user, score, scoreChecks, sessions, activ
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<title>NovaBanc Security Report</title>
+<title>NovaBank Security Report</title>
 <style>
   body { font-family: 'Segoe UI', Arial, sans-serif; background:#f0f4f8; color:#1e293b; margin:0; padding:40px; }
   .container { max-width:800px; margin:0 auto; background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 8px 32px rgba(0,0,0,0.1); }
@@ -187,8 +247,8 @@ export function exportSecurityReport({ user, score, scoreChecks, sessions, activ
 <body>
 <div class="container">
   <div class="header">
-    <h1>🔒 NovaBanc Security Report</h1>
-    <p>Account: ${user?.name || 'Alex Johnson'} · ${user?.email || 'demo@novabanc.com'} · Generated: ${now}</p>
+    <h1>🔒 NovaBank Security Report</h1>
+    <p>Account: ${user?.name || 'Alex Johnson'} · ${user?.email || 'demo@novabank.com'} · Generated: ${now}</p>
   </div>
 
   <div class="score-section">
@@ -234,8 +294,8 @@ export function exportSecurityReport({ user, score, scoreChecks, sessions, activ
   </div>
 
   <div class="footer">
-    This report is generated for your records. NovaBanc will never ask for your password or PIN via email.<br/>
-    For security concerns, contact us at security@novabanc.com or call 1-800-NOVABANC.
+    This report is generated for your records. NovaBank will never ask for your password or PIN via email.<br/>
+    For security concerns, contact us at security@novabank.com or call 1-800-NOVABANK.
   </div>
 </div>
 </body>
@@ -245,7 +305,7 @@ export function exportSecurityReport({ user, score, scoreChecks, sessions, activ
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `NovaBanc_Security_Report_${Date.now()}.html`
+  a.download = `NovaBank_Security_Report_${Date.now()}.html`
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)

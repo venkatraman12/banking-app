@@ -1,5 +1,5 @@
 /**
- * Mobile E2E Tests — NovaBanc
+ * Mobile E2E Tests — NovaBank
  *
  * Runs on Pixel 7 (Android Chrome) and iPhone 15 (Safari) emulation.
  * Tests mobile-specific interactions: hamburger menu, sidebar drawer,
@@ -11,7 +11,7 @@
 import { test, expect } from '@playwright/test'
 
 const BASE = 'http://localhost:3000'
-const EMAIL = 'demo@novabanc.com'
+const EMAIL = 'demo@novabank.com'
 const PASSWORD = 'password'
 
 // ─── Helpers ────────────────────────────────────────────────────────────────

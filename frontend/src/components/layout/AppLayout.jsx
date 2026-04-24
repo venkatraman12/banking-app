@@ -6,7 +6,7 @@ import Header from './Header'
 import ChatBot from '../ChatBot/ChatBot'
 import './AppLayout.css'
 
-export default function AppLayout({ user, onLogout, darkMode, onToggleDark }) {
+export default function AppLayout({ user, onLogout, themeMode, isDark, onSetTheme }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const location = useLocation()
   const { privacyMode } = useSecurity()
@@ -23,8 +23,9 @@ export default function AppLayout({ user, onLogout, darkMode, onToggleDark }) {
         <Header
           user={user}
           onMenuClick={() => setSidebarOpen(true)}
-          darkMode={darkMode}
-          onToggleDark={onToggleDark}
+          themeMode={themeMode}
+          isDark={isDark}
+          onSetTheme={onSetTheme}
         />
         <main className="app-content">
           {/* key forces remount + re-animation on route change */}

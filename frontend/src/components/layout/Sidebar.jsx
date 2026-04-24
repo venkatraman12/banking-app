@@ -91,7 +91,7 @@ export default function Sidebar({ isOpen, onClose, onLogout, user }) {
           </div>
           {!collapsed && (
             <div className="brand-text">
-              <span className="brand-name">NovaBanc</span>
+              <span className="brand-name">NovaBank</span>
               <span className="brand-tagline">Premium Banking</span>
             </div>
           )}

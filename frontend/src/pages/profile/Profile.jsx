@@ -50,25 +50,25 @@ const OFFERS = [
   {
     id: 1, tag: 'Limited Time', badge: 'badge--warning',
     title: '5% Cashback on Groceries',
-    desc: 'Earn 5% cashback on all grocery purchases made with your NovaBanc Platinum card through April 30.',
+    desc: 'Earn 5% cashback on all grocery purchases made with your NovaBank Platinum card through April 30.',
     expires: 'Expires Apr 30, 2026', cta: 'Activate Offer', icon: '🛒', color: ['#f59e0b', '#d97706'],
   },
   {
     id: 2, tag: 'New', badge: 'badge--primary',
     title: 'Zero-Fee Transfers for 3 Months',
-    desc: 'Transfer funds between NovaBanc accounts with no fees for 90 days when you upgrade to Premium.',
+    desc: 'Transfer funds between NovaBank accounts with no fees for 90 days when you upgrade to Premium.',
     expires: 'Offer ends May 15, 2026', cta: 'Upgrade Now', icon: '💸', color: ['#2563eb', '#1d4ed8'],
   },
   {
     id: 3, tag: 'Exclusive', badge: 'badge--success',
     title: 'High-Yield Savings — 4.8% APY',
-    desc: 'Open a new NovaBanc High-Yield Savings account today and earn 4.8% APY on balances up to $100,000.',
+    desc: 'Open a new NovaBank High-Yield Savings account today and earn 4.8% APY on balances up to $100,000.',
     expires: 'Rate valid through Jun 2026', cta: 'Open Account', icon: '📈', color: ['#10b981', '#059669'],
   },
   {
     id: 4, tag: 'Partner Deal', badge: 'badge--purple',
     title: '$150 Bonus — Refer a Friend',
-    desc: 'Refer a friend to NovaBanc. When they open an account and make their first deposit, you both get $150.',
+    desc: 'Refer a friend to NovaBank. When they open an account and make their first deposit, you both get $150.',
     expires: 'Ongoing', cta: 'Share Referral Link', icon: '🎁', color: ['#8b5cf6', '#7c3aed'],
   },
 ]
@@ -84,12 +84,12 @@ const STATEMENTS = [
 
 const DEMO_OTP = '123456'
 
-export default function Profile({ user }) {
+export default function Profile({ user, themeMode = 'system', onSetTheme }) {
   const { accountFrozen, freezeAccount, unfreezeAccount, activeAlerts, dismissAlert } = useSecurity()
   const [activeTab, setActiveTab] = useState('personal')
 
   // Personal form
-  const [formData, setFormData]   = useState({ firstName: 'Alex', lastName: 'Johnson', email: user?.email || 'demo@novabanc.com', phone: '+1 (555) 234-5678', dob: '1990-05-14', address: '123 Main Street, New York, NY 10001' })
+  const [formData, setFormData]   = useState({ firstName: 'Alex', lastName: 'Johnson', email: user?.email || 'demo@novabank.com', phone: '+1 (555) 234-5678', dob: '1990-05-14', address: '123 Main Street, New York, NY 10001' })
   const [saved, setSaved]         = useState(false)
 
   // Security tab
@@ -148,7 +148,7 @@ export default function Profile({ user }) {
   }
 
   const handleCancel = () => {
-    setFormData({ firstName: 'Alex', lastName: 'Johnson', email: user?.email || 'demo@novabanc.com', phone: '+1 (555) 234-5678', dob: '1990-05-14', address: '123 Main Street, New York, NY 10001' })
+    setFormData({ firstName: 'Alex', lastName: 'Johnson', email: user?.email || 'demo@novabank.com', phone: '+1 (555) 234-5678', dob: '1990-05-14', address: '123 Main Street, New York, NY 10001' })
   }
 
   const handlePasswordSave = (e) => {
@@ -262,7 +262,7 @@ export default function Profile({ user }) {
             <div className="profile-avatar">{user?.name?.charAt(0) || 'A'}</div>
             <div className="profile-avatar-info">
               <h2>{user?.name || 'Alex Johnson'}</h2>
-              <span>{user?.email || 'demo@novabanc.com'}</span>
+              <span>{user?.email || 'demo@novabank.com'}</span>
             </div>
             <div className="profile-badge"><span className="badge-star">★</span> Premium Member</div>
           </div>
@@ -680,6 +680,56 @@ export default function Profile({ user }) {
             <div className="profile-section">
               <div className="profile-section-title">App Preferences</div>
               {prefSaved && <div className="save-success"><span>✓</span> Preferences saved</div>}
+
+              {/* ── Appearance ── */}
+              <div className="pref-appearance">
+                <div className="pref-appearance-label">Appearance</div>
+                <div className="theme-options">
+                  {[
+                    {
+                      id: 'system', label: 'System', desc: 'Follows your device setting',
+                      icon: (
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+                        </svg>
+                      ),
+                    },
+                    {
+                      id: 'light', label: 'Light', desc: 'Always use light theme',
+                      icon: (
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="5"/>
+                          <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+                          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                          <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+                          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                        </svg>
+                      ),
+                    },
+                    {
+                      id: 'dark', label: 'Dark', desc: 'Always use dark theme',
+                      icon: (
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                        </svg>
+                      ),
+                    },
+                  ].map(opt => (
+                    <button
+                      key={opt.id}
+                      className={`theme-option-card${themeMode === opt.id ? ' theme-option-card--active' : ''}`}
+                      onClick={() => onSetTheme && onSetTheme(opt.id)}
+                      type="button"
+                    >
+                      <span className="theme-option-icon">{opt.icon}</span>
+                      <span className="theme-option-label">{opt.label}</span>
+                      <span className="theme-option-desc">{opt.desc}</span>
+                      {themeMode === opt.id && <span className="theme-option-check">✓</span>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="preferences-list">
                 <div className="form-group">
                   <label>Currency</label>

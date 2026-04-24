@@ -1,5 +1,5 @@
 /**
- * Lighthouse Audit Test Suite — NovaBanc
+ * Lighthouse Audit Test Suite — NovaBank
  *
  * Runs programmatic Lighthouse audits against the live dev server.
  * Scores are 0–1 (1 = 100). Dev-mode thresholds are lenient;

@@ -43,7 +43,9 @@ const NOTIFICATIONS = [
   { id: 4, icon: '⚠️', text: 'Unusual login attempt detected',          time: 'Yesterday',  unread: false, type: 'warning' },
 ]
 
-export default function Header({ user, onMenuClick, darkMode, onToggleDark }) {
+const THEME_CYCLE = { system: 'light', light: 'dark', dark: 'system' }
+
+export default function Header({ user, onMenuClick, themeMode, isDark, onSetTheme }) {
   const [notifOpen, setNotifOpen]   = useState(false)
   const [notifications, setNotifications] = useState(NOTIFICATIONS)
   const [searchQuery, setSearchQuery] = useState('')
@@ -54,7 +56,7 @@ export default function Header({ user, onMenuClick, darkMode, onToggleDark }) {
   const navigate = useNavigate()
   const location = useLocation()
 
-  const pageInfo   = PAGE_TITLES[location.pathname] || { title: 'NovaBanc', sub: '' }
+  const pageInfo   = PAGE_TITLES[location.pathname] || { title: 'NovaBank', sub: '' }
   const unreadCount = notifications.filter(n => n.unread).length
 
   const searchResults = searchQuery.length > 0
@@ -104,7 +106,7 @@ export default function Header({ user, onMenuClick, darkMode, onToggleDark }) {
 
       {/* Page title */}
       <div className="header-title">
-        <span className="header-breadcrumb">NovaBanc</span>
+        <span className="header-breadcrumb">NovaBank</span>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="header-breadcrumb-sep">
           <polyline points="9 18 15 12 9 6"/>
         </svg>
@@ -174,14 +176,20 @@ export default function Header({ user, onMenuClick, darkMode, onToggleDark }) {
           </button>
         )}
 
-        {/* Dark mode toggle */}
+        {/* Theme toggle — cycles: system → light → dark */}
         <button
-          className={`header-icon-btn dark-mode-btn ${darkMode ? 'dark-mode-btn--on' : ''}`}
-          onClick={onToggleDark}
-          title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-          aria-label="Toggle dark mode"
+          className={`header-icon-btn dark-mode-btn ${isDark ? 'dark-mode-btn--on' : ''}`}
+          onClick={() => onSetTheme(THEME_CYCLE[themeMode])}
+          title={themeMode === 'system' ? 'Theme: System (click for Light)' : themeMode === 'light' ? 'Theme: Light (click for Dark)' : 'Theme: Dark (click for System)'}
+          aria-label="Cycle theme"
         >
-          {darkMode ? (
+          {themeMode === 'system' ? (
+            /* Monitor / auto icon */
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+          ) : themeMode === 'light' ? (
+            /* Sun icon */
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="5"/>
               <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
@@ -190,6 +198,7 @@ export default function Header({ user, onMenuClick, darkMode, onToggleDark }) {
               <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
             </svg>
           ) : (
+            /* Moon icon */
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
             </svg>

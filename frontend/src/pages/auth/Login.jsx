@@ -1,16 +1,24 @@
 import { useState, useEffect, useRef } from 'react'
 import { validateEmail, validatePassword } from '../../utils/validate'
 import { assessLoginRisk } from '../../utils/security'
+import { api, tokenStore, ApiError } from '../../api/client'
+import { useSecurity } from '../../context/SecurityContext'
 import './Login.css'
 
-const MAX_ATTEMPTS    = 5
 const PHISHING_PHRASE = 'Golden Sunrise Dolphin'
-const LOCKOUT_DURATIONS = [30, 60, 120, 240]
-const DEMO_OTP = '123456'
+const MAX_ATTEMPTS = 5
+
+let _logId = 0
 
 export default function Login({ onLogin }) {
+  const { csrfToken, sessionId } = useSecurity()
+
   // Multi-step state
   const [step, setStep] = useState(1) // 1 | 2 | 3
+
+  // Activity log
+  const [loginLogs, setLoginLogs] = useState([])
+  const [logsOpen, setLogsOpen] = useState(true)
 
   // Form values
   const [form, setForm] = useState({ email: '', password: '', otp: '' })
@@ -24,19 +32,24 @@ export default function Login({ onLogin }) {
   const [captchaSolved,  setCaptchaSolved]  = useState(false)
   const [loginRisk,      setLoginRisk]      = useState(null)
 
-  // Lockout states
+  // Lockout states (mirrors server-side lockout; server is source of truth)
   const [attempts,      setAttempts]      = useState(0)
-  const [lockoutCount,  setLockoutCount]  = useState(0)
   const [lockedUntil,   setLockedUntil]   = useState(null)
   const [lockCountdown, setLockCountdown] = useState(0)
 
   // OTP step states
-  const [otpDigits,  setOtpDigits]  = useState(['', '', '', '', '', ''])
-  const [otpTimer,   setOtpTimer]   = useState(30)
-  const [otpError,   setOtpError]   = useState('')
+  const [otpDigits,   setOtpDigits]   = useState(['', '', '', '', '', ''])
+  const [otpTimer,    setOtpTimer]    = useState(30)
+  const [otpError,    setOtpError]    = useState('')
+  const [challengeId, setChallengeId] = useState(null)
+  const [demoOtp,     setDemoOtp]     = useState(null)
   const otpRefs = [useRef(), useRef(), useRef(), useRef(), useRef(), useRef()]
 
   const isLocked = lockedUntil && Date.now() < lockedUntil
+
+  const addLog = (label, status, detail = '') => {
+    setLoginLogs(prev => [{ id: ++_logId, ts: Date.now(), label, status, detail }, ...prev].slice(0, 20))
+  }
 
   // OTP countdown timer — starts when we enter step 3
   useEffect(() => {
@@ -54,8 +67,7 @@ export default function Login({ onLogin }) {
     return () => clearInterval(interval)
   }, [step])
 
-  const startLockout = (lockoutIdx) => {
-    const seconds = LOCKOUT_DURATIONS[Math.min(lockoutIdx, LOCKOUT_DURATIONS.length - 1)]
+  const startLockout = (seconds) => {
     const until = Date.now() + seconds * 1000
     setLockedUntil(until)
     setLockCountdown(seconds)
@@ -75,7 +87,7 @@ export default function Login({ onLogin }) {
   }
 
   const handleEmailBlur = () => {
-    if (form.email === 'demo@novabanc.com') setShowPhrase(true)
+    if (form.email === 'demo@novabank.com') setShowPhrase(true)
     else setShowPhrase(false)
   }
 
@@ -85,10 +97,11 @@ export default function Login({ onLogin }) {
     setError('')
     const emailErr = validateEmail(form.email)
     if (emailErr) { setError(emailErr); return }
+    addLog('Email verified', 'success', form.email)
     setStep(2)
   }
 
-  // Step 2: Password → proceed to Step 3 (OTP)
+  // Step 2: Password → proceed to Step 3 (OTP) via backend
   const handlePasswordSubmit = async (e) => {
     e.preventDefault()
     if (isLocked) return
@@ -98,33 +111,39 @@ export default function Login({ onLogin }) {
     if (passErr) { setError(passErr); return }
 
     setLoading(true)
-    await new Promise(r => setTimeout(r, 900))
-    setLoading(false)
-
-    if (form.email === 'demo@novabanc.com' && form.password === 'password') {
+    try {
+      const res = await api.login(form.email, form.password)
       setAttempts(0)
+      addLog('Password accepted', 'success')
       const risk = assessLoginRisk({ failedAttempts: attempts })
-      if (risk.level !== 'low') {
-        setLoginRisk(risk)
-        await new Promise(r => setTimeout(r, 800))
-      }
-      // Correct credentials — go to OTP step
+      if (risk.level !== 'low') setLoginRisk(risk)
+      setChallengeId(res.data.challenge_id)
+      setDemoOtp(res.data.demo_code || null)
       setStep(3)
-    } else {
-      const newAttempts = attempts + 1
-      setAttempts(newAttempts)
-      const remaining = MAX_ATTEMPTS - newAttempts
-      if (newAttempts >= MAX_ATTEMPTS) {
-        const nextLockout = lockoutCount
-        setLockoutCount(c => c + 1)
-        startLockout(nextLockout)
-        const dur = LOCKOUT_DURATIONS[Math.min(nextLockout, LOCKOUT_DURATIONS.length - 1)]
-        setError(`Too many failed attempts. Account locked for ${dur} seconds.`)
-      } else if (newAttempts >= 3 && !captchaSolved) {
-        setError(`Security check required. ${remaining} attempt${remaining !== 1 ? 's' : ''} remaining.`)
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.status === 423) {
+          const match = err.message.match(/(\d+)s/)
+          const secs = match ? parseInt(match[1], 10) : 300
+          startLockout(secs)
+          addLog('Account locked', 'danger', `${secs}s lockout`)
+          setError(err.message)
+        } else if (err.status === 401) {
+          const newAttempts = attempts + 1
+          setAttempts(newAttempts)
+          addLog('Password failed', 'danger', `attempt ${newAttempts}/${MAX_ATTEMPTS}`)
+          const remaining = Math.max(0, 5 - newAttempts)
+          setError(remaining > 0
+            ? `Invalid password. ${remaining} attempt${remaining !== 1 ? 's' : ''} remaining.`
+            : err.message)
+        } else {
+          setError(err.message)
+        }
       } else {
-        setError(`Invalid password. ${remaining} attempt${remaining !== 1 ? 's' : ''} remaining.`)
+        setError('Unable to reach server. Please try again.')
       }
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -172,30 +191,69 @@ export default function Login({ onLogin }) {
       setOtpError('Please enter all 6 digits.')
       return
     }
+    if (!challengeId) {
+      setOtpError('Session expired. Please sign in again.')
+      setStep(1)
+      return
+    }
     setLoading(true)
-    await new Promise(r => setTimeout(r, 700))
-    setLoading(false)
-    if (enteredOtp === DEMO_OTP) {
-      onLogin({ name: 'Alex Johnson', email: form.email })
-    } else {
-      setOtpError('Invalid OTP. Hint: try 123456')
+    try {
+      const res = await api.verifyOtp(challengeId, enteredOtp)
+      addLog('Authenticated', 'success', 'OTP verified')
+      const { access_token, refresh_token, user } = res.data
+      tokenStore.set(access_token)
+      tokenStore.setRefresh(refresh_token)
+      tokenStore.setUser(user)
+      onLogin(user)
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : 'Verification failed.'
+      addLog('OTP failed', 'danger', msg)
+      setOtpError(msg)
       setOtpDigits(['', '', '', '', '', ''])
       otpRefs[0].current?.focus()
+    } finally {
+      setLoading(false)
     }
   }
 
-  const handleOtpResend = () => {
+  const handleOtpResend = async () => {
     setOtpDigits(['', '', '', '', '', ''])
     setOtpError('')
-    setOtpTimer(30)
+    try {
+      const res = await api.login(form.email, form.password)
+      setChallengeId(res.data.challenge_id)
+      setDemoOtp(res.data.demo_code || null)
+      setOtpTimer(30)
+    } catch (err) {
+      setOtpError(err instanceof ApiError ? err.message : 'Could not resend code.')
+    }
   }
 
   const handleBiometric = async () => {
     setBiometricState('scanning')
-    await new Promise(r => setTimeout(r, 1800))
-    setBiometricState('success')
-    await new Promise(r => setTimeout(r, 600))
-    onLogin({ name: 'Alex Johnson', email: 'demo@novabanc.com' })
+    addLog('Biometric scan', 'info')
+    try {
+      const login = await api.login('demo@novabank.com', 'password')
+      await new Promise(r => setTimeout(r, 1200))
+      const verify = await api.verifyOtp(login.data.challenge_id, login.data.demo_code)
+      addLog('Biometric OK', 'success')
+      setBiometricState('success')
+      const { access_token, refresh_token, user } = verify.data
+      tokenStore.set(access_token)
+      tokenStore.setRefresh(refresh_token)
+      tokenStore.setUser(user)
+      await new Promise(r => setTimeout(r, 400))
+      onLogin(user)
+    } catch (err) {
+      setBiometricState('idle')
+      addLog('Biometric failed', 'danger')
+      setError(err instanceof ApiError ? err.message : 'Biometric authentication failed.')
+    }
+  }
+
+  const handleCaptchaChange = (checked) => {
+    setCaptchaSolved(checked)
+    if (checked) addLog('CAPTCHA passed', 'warning')
   }
 
   const needsCaptcha = attempts >= 3 && !isLocked
@@ -214,8 +272,7 @@ export default function Login({ onLogin }) {
             </svg>
           </div>
           <div>
-            <span className="login-brand-name">NovaBanc</span>
-            <span className="login-brand-tag">2.0</span>
+            <span className="login-brand-name">NovaBank</span>
           </div>
         </div>
 
@@ -441,7 +498,7 @@ export default function Login({ onLogin }) {
                 {needsCaptcha && (
                   <div className={`captcha-box ${captchaSolved ? 'captcha-box--solved' : ''}`}>
                     <label className="captcha-label">
-                      <input type="checkbox" checked={captchaSolved} onChange={e => setCaptchaSolved(e.target.checked)} />
+                      <input type="checkbox" checked={captchaSolved} onChange={e => handleCaptchaChange(e.target.checked)} />
                       <span className="captcha-check-icon">
                         {captchaSolved ? (
                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -555,12 +612,14 @@ export default function Login({ onLogin }) {
                   </div>
                 )}
 
-                <div className="otp-hint-box">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-                  </svg>
-                  Demo OTP: <strong>123456</strong>
-                </div>
+                {demoOtp && (
+                  <div className="otp-hint-box">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                    Demo OTP: <strong>{demoOtp}</strong>
+                  </div>
+                )}
 
                 <button type="submit" className="login-btn" disabled={loading || otpDigits.join('').length < 6}>
                   {loading ? <span className="spinner" /> : 'Verify & Sign In'}
@@ -597,7 +656,7 @@ export default function Login({ onLogin }) {
             </div>
             <div className="login-demo-row">
               <span>Email</span>
-              <code>demo@novabanc.com</code>
+              <code>demo@novabank.com</code>
             </div>
             <div className="login-demo-row">
               <span>Password</span>
@@ -605,11 +664,76 @@ export default function Login({ onLogin }) {
             </div>
             <div className="login-demo-row">
               <span>OTP</span>
-              <code>123456</code>
+              <code>shown on step 3</code>
             </div>
           </div>
+
+          {/* Activity Log — glass panel */}
+          {loginLogs.length > 0 && (
+            <div className="glass-panel login-log-panel">
+              <button className="glass-panel-header" onClick={() => setLogsOpen(o => !o)}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                </svg>
+                <span>Activity Log</span>
+                <span className="glass-panel-count">{loginLogs.length}</span>
+                <svg
+                  className={`glass-panel-chevron${logsOpen ? ' glass-panel-chevron--open' : ''}`}
+                  width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                >
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+              {logsOpen && (
+                <div className="glass-panel-body">
+                  {loginLogs.slice(0, 6).map(e => (
+                    <div key={e.id} className="log-entry">
+                      <span className={`log-dot log-dot--${e.status}`} />
+                      <span className="log-label">{e.label}</span>
+                      {e.detail && <span className="log-detail-chip">{e.detail}</span>}
+                      <span className="log-ts">{relativeTime(e.ts)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Session & Cookies — glass panel */}
+          <div className="glass-panel login-cookie-panel">
+            <div className="glass-panel-header glass-panel-header--static">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+              <span>Session & Cookies</span>
+            </div>
+            <div className="glass-panel-body">
+              {[
+                ['CSRF Token',  csrfToken ? csrfToken.slice(0, 12) + '…' : '—'],
+                ['Session ID',  sessionId ? sessionId.slice(0, 10) + '…' : '—'],
+                ['SameSite',    'Strict'],
+                ['HttpOnly',    'Yes'],
+                ['Secure',      'Yes'],
+                ['Theme',       localStorage.getItem('nova-theme') || 'light'],
+                ['Expires',     'Session'],
+              ].map(([k, v]) => (
+                <div key={k} className="cookie-row">
+                  <span className="cookie-key">{k}</span>
+                  <span className="cookie-val">{v}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
   )
+}
+
+function relativeTime(ts) {
+  const diff = Math.round((Date.now() - ts) / 1000)
+  if (diff < 5)  return 'just now'
+  if (diff < 60) return `${diff}s ago`
+  return `${Math.round(diff / 60)}m ago`
 }
